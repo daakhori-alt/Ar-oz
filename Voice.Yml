@@ -1,0 +1,67 @@
+name: Озвучка
+
+on:
+  workflow_dispatch:
+    inputs:
+      voice:
+        description: Голос
+        type: choice
+        default: ar-SA-HamedNeural
+        options:
+          - ar-SA-HamedNeural
+          - ar-SA-ZariyahNeural
+          - ar-EG-ShakirNeural
+          - ar-EG-SalmaNeural
+      rate:
+        description: Скорость (например -10%, -20%, +0%)
+        type: string
+        default: "-10%"
+      variants:
+        description: Для фраз вида «А / Б» - озвучить только А или оба
+        type: choice
+        default: first
+        options:
+          - first
+          - both
+      bitrate:
+        description: Битрейт mp3 (16k легче, 32k лучше)
+        type: choice
+        default: 24k
+        options:
+          - 16k
+          - 24k
+          - 32k
+
+jobs:
+  voice:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Установка ffmpeg и библиотек
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ffmpeg
+          pip install -U edge-tts pydub
+
+      - name: Озвучка
+        run: python voice.py
+        env:
+          VOICE: ${{ inputs.voice }}
+          RATE: ${{ inputs.rate }}
+          VARIANTS: ${{ inputs.variants }}
+          BITRATE: ${{ inputs.bitrate }}
+
+      - name: Сохранить результат
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ar_audio
+          path: out
+          retention-days: 7
+          compression-level: 0
